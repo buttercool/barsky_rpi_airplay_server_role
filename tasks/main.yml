@@ -1,0 +1,168 @@
+# Disable WLAN Power Saving
+- name: Disable WLAN Power Saving
+  ansible.builtin.lineinfile:
+    path: /etc/rc.local
+    regexp: '^dtparam=audio=on'
+    insertbefore: '^exit 0'
+    line: 'iwconfig wlan0 power off'
+  notify: restart_host
+# Configure Hifiberry
+# Based on: https://www.hifiberry.com/docs/software/configuring-linux-3-18-x/
+- name: Disable Built-In Audio on the Pi
+  ansible.builtin.lineinfile:
+    path: /boot/config.txt
+    regexp: '^dtparam=audio=on'
+    line: '#dtparam=audio=on'
+  notify: restart_host
+- name: Disable vc4-kms Audio on the Pi
+  ansible.builtin.lineinfile:
+    path: /boot/config.txt
+    regexp: '^dtoverlay=vc4-kms-v3d'
+    line: 'dtoverlay=vc4-kms-v3d,audio=off'
+  notify: restart_host
+- name: Configure dtoverlay for HifiBerry DAC+
+  ansible.builtin.lineinfile:
+    path: /boot/config.txt
+    state: present
+    regexp: '^dtoverlay=hifiberry-dacplus'
+    line: 'dtoverlay=hifiberry-dacplus'
+  notify: restart_host
+- name: Disable Force EEPROM Read for Linux 5.4 and Up
+  ansible.builtin.lineinfile:
+    path: /boot/config.txt
+    state: present
+    regexp: '^force_eeprom_read=0'
+    line: 'force_eeprom_read=0'
+  notify: restart_host
+# Configure ALSA
+- name: Install asound.conf
+  ansible.builtin.copy:
+    src: "files/{{ ansible_hostname }}-asound.conf"
+    dest: /etc/asound.conf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart_host
+# Install and Configure Shairport
+# From: https://github.com/stijn192/ansible-shairport-phat/blob/master/roles/shairport/tasks/main.yml
+- name: Install required dependencies through apt
+  apt:
+    name: "{{ shairport_dependencies }}"
+    state: present
+  vars:
+    shairport_dependencies:
+      - autoconf
+      - automake
+      - avahi-daemon
+      - git 
+      - libasound2-dev
+      - libavahi-client-dev
+      - libconfig-dev
+      - libdaemon-dev
+      - libpolarssl-dev
+      - libpopt-dev
+      - libsoxr-dev
+      - libssl-dev
+      - libtool
+      - build-essential 
+      - shairport-sync
+# Install Shairport Custom @ Service File
+- name: Install shairport-sync@.service
+  ansible.builtin.copy:
+    src: files/shairport-sync@.service
+    dest: /lib/systemd/system/shairport-sync@.service
+    owner: root
+    group: root
+    mode: '0644'  
+# Install Shairport Config Files Based on Pi Used
+## BOTH MBOXES
+- name: Install shairport-sync.conf
+  ansible.builtin.copy:
+    src: "files/{{ ansible_hostname }}-shairport-sync.conf"
+    dest: /etc/shairport-sync.conf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart_shairport
+## MBOX-COMMON
+- name: Install shairport-syncAll.conf
+  ansible.builtin.copy:
+    src: "files/mbox-common-shairport-syncAll.conf"
+    dest: /etc/shairport-syncAll.conf
+    owner: root
+    group: root
+    mode: '0644'
+  when: ansible_hostname == "mbox-common"
+  notify: enable_and_start_shairport_all
+## MBOX-BEDROOMS
+- name: Install shairport-syncAllBedrooms.conf
+  ansible.builtin.copy:
+    src: "files/mbox-bedrooms-shairport-syncAllBedrooms.conf"
+    dest: /etc/shairport-syncAllBedrooms.conf
+    owner: root
+    group: root
+    mode: '0644'
+  when: ansible_hostname == "mbox-bedrooms"
+  notify: enable_and_start_shairport_all_bedrooms
+- name: Install shairport-syncKidsBedroom.conf
+  ansible.builtin.copy:
+    src: "files/mbox-bedrooms-shairport-syncKidsBedroom.conf"
+    dest: /etc/shairport-syncKidsBedroom.conf
+    owner: root
+    group: root
+    mode: '0644'
+  when: ansible_hostname == "mbox-bedrooms"
+  notify: enable_and_start_shairport_kids_bedroom
+# Install the Volume API
+- name: Check for Python
+  stat: 
+    path: /usr/bin/python
+  register: check_python
+- name: Install Python
+  raw: apt -y update && apt install -y python-pip
+  when: not check_python.stat.exists
+- name: Install pip3
+  apt: 
+    name: python3-pip 
+    state: present
+    update_cache: yes 
+- name: Check for barsky-volume-api.service unit file
+  stat: 
+    path: /lib/systemd/system/barsky-volume-api.service
+  register: check_volume_app_service
+- name: Install barsky-volume-api.service unit file
+  ansible.builtin.copy:
+    src: files/barsky-volume-api.service
+    dest: /lib/systemd/system/barsky-volume-api.service
+    owner: root
+    group: root
+    mode: '0644'
+  when: not check_volume_app_service.stat.exists
+  notify: enable_and_start_volume
+- name: Install barsky-volume-api App Dependencies
+  pip:
+    name:
+      - flask-restful
+  when: not check_volume_app_service.stat.exists
+- name: Check for volume api app directory
+  stat: 
+    path: /var/lib/barsky-volume-api
+  register: check_volume_app_directory
+- name: Create barsky-volume-api directory
+  file:
+    path: /var/lib/barsky-volume-api
+    state: directory
+  when: not check_volume_app_directory.stat.exists
+- name: Check for volume-api.py app script
+  stat: 
+    path: /var/lib/barsky-volume-api/volume-api.py
+  register: check_volume_app_script
+- name: Install volume-api.py app script
+  ansible.builtin.copy:
+    src: files/volume-api.py
+    dest: /var/lib/barsky-volume-api/volume-api.py
+    owner: root
+    group: root
+    mode: '0755'
+  when: not check_volume_app_script.stat.exists
+  notify: restart_volume

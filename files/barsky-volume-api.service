@@ -1,0 +1,11 @@
+[Unit]
+Description=Barsky Volume API
+After=multi-user.target
+
+[Service]
+Type=idle
+ExecStart=/usr/bin/python /var/lib/barsky-volume-api/volume-api.py
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,35 @@
+- name: enable_and_start_volume
+  systemd:
+    name: barsky-volume-api
+    state: started
+    enabled: yes
+- name: restart_volume
+  systemd:
+    name: barsky-volume-api
+    state: restarted
+- name: enable_and_start_shairport
+  systemd:
+    name: shairport-sync
+    state: started
+    enabled: yes
+- name: restart_shairport
+  systemd:
+    name: shairport-sync
+    state: restarted
+- name: enable_and_start_shairport_all
+  systemd:
+    name: shairport-sync@All
+    state: started
+    enabled: yes
+- name: enable_and_start_shairport_all_bedrooms
+  systemd:
+    name: shairport-sync@AllBedrooms
+    state: restarted
+    enabled: yes
+- name: enable_and_start_shairport_kids_bedroom
+  systemd:
+    name: shairport-sync@KidsBedroom
+    state: restarted
+    enabled: yes
+- name: restart_host
+  reboot:
