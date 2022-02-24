@@ -8,6 +8,7 @@ Barsky RPi Airplay Server Role
 - Adjust the shairport-sync*.conf files to reflect your Airplay Zone naming, also change output names to match your *asound.conf files, finally define a connection password if you want.
 
 ## Reference Role Directory Structure and Contents
+~~~
 ~/ansible/roles/barsky_rpi_airplay_server# tree
 .
 ├── files
@@ -26,3 +27,4 @@ Barsky RPi Airplay Server Role
 │   └── main.yml
 └── tasks
     └── main.yml
+~~~
