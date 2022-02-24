@@ -20,7 +20,7 @@ Barsky RPi Airplay Server Role
 │   ├── mbox-common-asound.conf
 │   ├── mbox-common-shairport-sync.conf
 │   ├── mbox-common-shairport-syncAll.conf
-│   ├── shairport-sync.service
+│   ├── shairport-sync.service (NOT in use currently)
 │   ├── shairport-sync@.service
 │   └── volume-api.py
 ├── handlers
