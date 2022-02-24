@@ -1,5 +1,5 @@
 # barsky_rpi_airplay_server_role
-Barsky RPi Airplay Server Role
+Barsky RPi Airplay Server Ansible Role
 ## Install
 - Copy this whole directory (the parent directory of this README.txt and it's contents) into you Ansible roles directory.
 - Adjust the contents of the roles 'files' directory to reflext the hostnames of your RPi's. TL;DR edit every instance of 'mbox-common' or 'mbox-bedrooms' in the file names.
